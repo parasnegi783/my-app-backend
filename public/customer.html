@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Customer Chat</title>
+  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 20px;
+    }
+    #chatBox {
+      height: 400px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      padding: 10px;
+    }
+    .message {
+      padding: 8px;
+      margin-bottom: 6px;
+      border-radius: 6px;
+      max-width: 70%;
+    }
+    .host {
+      background-color: #e0e0e0;
+      text-align: left;
+    }
+    .customer {
+      background-color: #cce5ff;
+      text-align: right;
+      margin-left: auto;
+    }
+    .name {
+      font-weight: bold;
+      font-size: 0.9em;
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Customer Chat</h2>
+  <div id="chatBox"></div>
+  <input id="messageInput" placeholder="Type a message..." />
+  <button onclick="sendMessage()">Send</button>
+
+  <script>
+    const socket = io("http://localhost:5000");
+
+    let userName = "";
+
+    // Prompt for user name when page loads
+    window.onload = () => {
+      userName = prompt("Enter your name:");
+      if (!userName) userName = "Anonymous";
+    };
+
+    function sendMessage() {
+      const input = document.getElementById("messageInput");
+      const text = input.value;
+      if (!text.trim()) return;
+
+      const msgObj = {
+        text: text,
+        sender: userName,
+        name: userName,
+        time: new Date().toLocaleTimeString(),
+        seen: false,
+      };
+
+      socket.emit("send_message", msgObj);
+      addMessageToUI(msgObj);
+      input.value = "";
+    }
+
+    function addMessageToUI(msg) {
+      const chatBox = document.getElementById("chatBox");
+      const msgDiv = document.createElement("div");
+      msgDiv.classList.add("message", msg.sender === "customer" ? "customer" : "host");
+      msgDiv.innerHTML = `
+        <div class="name">${msg.name || "Host"}</div>
+        <p>${msg.text}</p>
+        <small>${msg.time || ""}</small>
+      `;
+      chatBox.appendChild(msgDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    socket.on("receive_message", (msg) => {
+      addMessageToUI(msg);
+    });
+  </script>
+</body>
+</html>
